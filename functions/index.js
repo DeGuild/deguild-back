@@ -22,6 +22,7 @@ const express = require("express");
 //  const cookieParser = require('cookie-parser')();
 const cors = require("cors")({ origin: true });
 const shop = express();
+const Web3Token = require("web3-token");
 
 // Create and Deploy Your First Cloud Functions
 // https://firebase.google.com/docs/functions/write-firebase-functions
@@ -59,8 +60,15 @@ async function deleteCollection(db, collectionPath, batchSize) {
 }
 
 const addMagicScroll = async (req, res) => {
+  // getting token from authorization header ... for example
+  const token = req.headers["Authorization"];
+
+  const { address, body } = await Web3Token.verify(token);
+
+  // now you can find that user by his address
+  // (better to do it case insensitive)
+  req.user = await User.findOne({ address });
   // Grab the text parameter.
-  const address = req.body.address;
   const tokenId = req.body.tokenId;
   const courseId = req.body.courseId;
   const description = req.body.description;
@@ -78,7 +86,14 @@ const addMagicScroll = async (req, res) => {
     .firestore()
     .collection(`MagicShop/${address}/tokens`)
     .doc(tokenId)
-    .set({ url, tokenId: parseInt(tokenId, 10), courseId, description, name, prerequisite });
+    .set({
+      url,
+      tokenId: parseInt(tokenId, 10),
+      courseId,
+      description,
+      name,
+      prerequisite,
+    });
 
   // Send back a message that we've successfully written the message
   res.json({
