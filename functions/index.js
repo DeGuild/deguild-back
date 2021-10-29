@@ -33,9 +33,6 @@ const validateWeb3Token = async (req, res, next) => {
   }
 
   const token = req.headers.authorization;
-  functions.logger.info(req.originalUrl);
-  functions.logger.info(token);
-  functions.logger.info(req.headers.authorization);
 
   try {
     const { address, body } = await Web3Token.verify(token);
@@ -149,6 +146,8 @@ const setProfile = async (req, res) => {
 const testAPI = async (req, res) => {
   const token = req.headers.authorization;
   const { address, body } = await Web3Token.verify(token);
+  functions.logger.info(token);
+  functions.logger.info(address);
   res.json({
     result: address,
   });
@@ -173,7 +172,7 @@ guild.use(validateWeb3Token);
 
 guild.post("/addJob", addJob);
 guild.post("/deleteJob", deleteJob);
+guild.post("/profile", setProfile);
 guild.get("/test", testAPI);
-guild.get("/profile", setProfile);
 
 exports.guild = functions.https.onRequest(guild);
