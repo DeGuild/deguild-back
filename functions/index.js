@@ -151,12 +151,13 @@ const setProfile = async (req, res) => {
 };
 
 const testAPI = async (req, res) => {
-  const token = req.headers['Authorization']
+  const token = req.headers.authorization
   try {
     const { address, body } = await Web3Token.verify(token);
     res.json({
       result: address,
     });
+    return;
   } catch (error) {
     functions.logger.error("Error while verifying Firebase ID token:", error);
     res.json({
