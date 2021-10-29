@@ -33,6 +33,7 @@ const validateWeb3Token = async (req, res, next) => {
   }
 
   const token = req.headers['Authorization']
+  functions.logger.info(req.originalUrl);
 
   try {
     const { address, body } = await Web3Token.verify(token);
