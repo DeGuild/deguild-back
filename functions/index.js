@@ -37,7 +37,8 @@ const validateWeb3Token = async (req, res, next) => {
   try {
     const { address, body } = await Web3Token.verify(token);
     if (
-      address === "0x9cb8E9aF151e570c54046dC50F72Bd76B12715e7" ||
+      address === "0xAe488A5e940868bFFA6D59d9CDDb92Da11bb2cD9" ||
+      address === "0x785867278139c1cA73bF1e978461c8028061aDf6" ||
       req.originalUrl === "/test" ||
       req.originalUrl === "/profile"
     ) {
