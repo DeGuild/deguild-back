@@ -177,7 +177,7 @@ const deleteJob = async (req, res) => {
 };
 
 guild.use(cors);
-app.use(validateWeb3Token);
+guild.use(validateWeb3Token);
 
 guild.post("/addJob", addJob);
 guild.post("/deleteJob", deleteJob);
