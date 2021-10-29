@@ -19,10 +19,37 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 admin.initializeApp();
 const express = require("express");
-//  const cookieParser = require('cookie-parser')();
 const cors = require("cors")({ origin: true });
-const shop = express();
+const guild = express();
 const Web3Token = require("web3-token");
+
+const validateWeb3Token = async (req, res, next) => {
+  if (!req.headers.authorization) {
+    functions.logger.error(
+      "No web token was passed in the Authorization header."
+    );
+    res.status(403).send("Unauthorized");
+    return;
+  }
+
+  const token = req.headers.authorization;
+
+  try {
+    const { address, body } = await Web3Token.verify(token);
+    if (
+      address === "0x9cb8E9aF151e570c54046dC50F72Bd76B12715e7" ||
+      req.originalUrl === "/testAPI" ||
+      req.originalUrl === "/profile"
+    ) {
+      next();
+      return;
+    }
+  } catch (error) {
+    functions.logger.error("Error while verifying Firebase ID token:", error);
+  }
+  res.status(403).send("Unauthorized");
+  return;
+};
 
 // Create and Deploy Your First Cloud Functions
 // https://firebase.google.com/docs/functions/write-firebase-functions
@@ -59,15 +86,7 @@ async function deleteCollection(db, collectionPath, batchSize) {
   });
 }
 
-const addMagicScroll = async (req, res) => {
-  // getting token from authorization header ... for example
-  const token = req.headers["Authorization"];
-
-  const { address, body } = await Web3Token.verify(token);
-
-  // now you can find that user by his address
-  // (better to do it case insensitive)
-  req.user = await User.findOne({ address });
+const addJob = async (req, res) => {
   // Grab the text parameter.
   const tokenId = req.body.tokenId;
   const courseId = req.body.courseId;
@@ -84,7 +103,7 @@ const addMagicScroll = async (req, res) => {
 
   await admin
     .firestore()
-    .collection(`MagicShop/${address}/tokens`)
+    .collection(`DeGuild/${address}/tokens`)
     .doc(tokenId)
     .set({
       url,
@@ -101,40 +120,26 @@ const addMagicScroll = async (req, res) => {
   });
 };
 
-const readMagicScroll = async (req, res) => {
+const setProfile = async (req, res) => {
   // Grab the text parameter.
-  const address = req.params.address;
-  const tokenId = req.params.id;
-  const readResult = await admin
-    .firestore()
-    .collection(`MagicShop/${address}/tokens`)
-    .doc(tokenId)
-    .get();
-  // Send back a message that we've successfully written the message
-  functions.logger.log(readResult);
-  if (readResult.data()) {
-    try {
-      res.json(readResult.data());
-    } catch (error) {
-      res.json(error);
-    }
-  } else {
-    res.json({
-      message: "Magic scroll not found!",
-    });
-  }
-};
+  const name = req.body.name;
+  const url = req.body.url
+    ? req.body.url
+    : "https://firebasestorage.googleapis.com/v0/b/deguild-2021.appspot.com/o/0.png?alt=media&token=131e4102-2ca3-4bf0-9480-3038c45aa372";
 
-const deleteMagicScroll = async (req, res) => {
-  // Grab the text parameter.
-  const address = req.params.address;
-  const tokenId = req.params.tokenId;
+  const prerequisite = req.body.prerequisite
+    ? req.body.prerequisite
+    : "0x0000000000000000000000000000000000000000";
   // Push the new message into Firestore using the Firebase Admin SDK.
+
   await admin
     .firestore()
-    .collection(`MagicShop/${address}/tokens`)
+    .collection(`DeGuild/${address}`)
     .doc(tokenId)
-    .delete();
+    .set({
+      url,
+      name,
+    });
 
   // Send back a message that we've successfully written the message
   res.json({
@@ -142,17 +147,28 @@ const deleteMagicScroll = async (req, res) => {
   });
 };
 
-const deleteMagicShop = async (req, res) => {
+const testAPI = async (req, res) => {
+  const token = req.headers.authorization;
+  try {
+    const { address, body } = await Web3Token.verify(token);
+    res.json({
+      result: address,
+    });
+  } catch (error) {
+    functions.logger.error("Error while verifying Firebase ID token:", error);
+    res.json({
+      result: "What is this token, sir?",
+    });
+  }
+  // Send back a message that we've successfully written the message
+};
+
+const deleteJob = async (req, res) => {
   // Grab the text parameter.
-  const address = req.params.address;
-  // Push the new message into Firestore using the Firebase Admin SDK.
-  // await admin.firestore().collection(`MagicShop/${address}/tokens`);
-  await deleteCollection(
-    admin.firestore(),
-    `MagicShop/${address}/tokens`,
-    9999
-  );
-  await admin.firestore().collection(`MagicShop`).doc(address).delete();
+  const address = req.body.address;
+  const id = req.body.jobId;
+ 
+  await admin.firestore().collection(`DeGuild`).doc(id).delete();
   // Send back a message that we've successfully written the message
   res.json({
     result: "Successful",
@@ -160,59 +176,12 @@ const deleteMagicShop = async (req, res) => {
   });
 };
 
-const allMagicScrolls = async (req, res) => {
-  // Grab the text parameter.
-  const address = req.params.address;
-  const tokenId = parseInt(req.params.tokenId, 10);
-  const direction = req.params.direction;
+guild.use(cors);
+app.use(validateWeb3Token);
 
-  let data = [];
-  if (direction === "next") {
-    const startAtSnapshot = admin
-      .firestore()
-      .collection(`MagicShop/${address}/tokens`)
-      .orderBy("tokenId", "asc")
-      .startAfter(tokenId);
+guild.post("/addJob", addJob);
+guild.post("/deleteJob", deleteJob);
+guild.get("/test", testAPI);
+guild.get("/profile", setProfile);
 
-    const items = await startAtSnapshot.limit(24).get();
-    items.forEach((doc) => {
-      data.push(doc.data());
-    });
-  } else if (direction === "previous") {
-    const startAtSnapshot = admin
-      .firestore()
-      .collection(`MagicShop/${address}/tokens`)
-      .orderBy("tokenId", "desc")
-      .startAfter(tokenId);
-
-    const items = await startAtSnapshot.limit(24).get();
-    items.forEach((doc) => {
-      data.push(doc.data());
-    });
-  } else {
-    const readResult = await admin
-      .firestore()
-      .collection(`MagicShop/${address}/tokens`)
-      .orderBy("tokenId", "asc")
-      .limit(24)
-      .get();
-    // Send back a message that we've successfully written the message3
-    readResult.forEach((doc) => {
-      data.push(doc.data());
-    });
-    // readResult.map
-    functions.logger.log(readResult);
-  }
-
-  res.json(data.sort());
-};
-
-shop.use(cors);
-shop.post("/addMagicScroll", addMagicScroll);
-shop.get("/readMagicScroll/:address/:id", readMagicScroll);
-shop.post("/deleteMagicShop/:address", deleteMagicShop);
-shop.post("/deleteMagicScroll/:address/:tokenId", deleteMagicScroll);
-shop.get("/allMagicScrolls/:address/:direction/:tokenId", allMagicScrolls);
-shop.get("/allMagicScrolls/:address", allMagicScrolls);
-
-exports.shop = functions.https.onRequest(shop);
+exports.guild = functions.https.onRequest(guild);
