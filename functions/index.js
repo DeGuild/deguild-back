@@ -32,7 +32,7 @@ const validateWeb3Token = async (req, res, next) => {
     return;
   }
 
-  const token = req.headers.authorization
+  const token = req.headers.authorization;
   functions.logger.info(req.originalUrl);
   functions.logger.info(token);
   functions.logger.info(req.headers.authorization);
@@ -135,14 +135,10 @@ const setProfile = async (req, res) => {
     : "0x0000000000000000000000000000000000000000";
   // Push the new message into Firestore using the Firebase Admin SDK.
 
-  await admin
-    .firestore()
-    .collection(`DeGuild/${address}`)
-    .doc(tokenId)
-    .set({
-      url,
-      name,
-    });
+  await admin.firestore().collection(`DeGuild/${address}`).doc(tokenId).set({
+    url,
+    name,
+  });
 
   // Send back a message that we've successfully written the message
   res.json({
@@ -151,19 +147,11 @@ const setProfile = async (req, res) => {
 };
 
 const testAPI = async (req, res) => {
-  const token = req.headers.authorization
-  try {
-    const { address, body } = await Web3Token.verify(token);
-    res.json({
-      result: address,
-    });
-    return;
-  } catch (error) {
-    functions.logger.error("Error while verifying Firebase ID token:", error);
-    res.json({
-      result: "What is this token, sir?",
-    });
-  }
+  const token = req.headers.authorization;
+  const { address, body } = await Web3Token.verify(token);
+  res.json({
+    result: address,
+  });
   // Send back a message that we've successfully written the message
 };
 
@@ -171,7 +159,7 @@ const deleteJob = async (req, res) => {
   // Grab the text parameter.
   const address = req.body.address;
   const id = req.body.jobId;
- 
+
   await admin.firestore().collection(`DeGuild`).doc(id).delete();
   // Send back a message that we've successfully written the message
   res.json({
