@@ -32,13 +32,13 @@ const validateWeb3Token = async (req, res, next) => {
     return;
   }
 
-  const token = req.headers.authorization;
+  const token = req.headers['Authorization']
 
   try {
     const { address, body } = await Web3Token.verify(token);
     if (
       address === "0x9cb8E9aF151e570c54046dC50F72Bd76B12715e7" ||
-      req.originalUrl === "/testAPI" ||
+      req.originalUrl === "/test" ||
       req.originalUrl === "/profile"
     ) {
       next();
@@ -148,7 +148,7 @@ const setProfile = async (req, res) => {
 };
 
 const testAPI = async (req, res) => {
-  const token = req.headers.authorization;
+  const token = req.headers['Authorization']
   try {
     const { address, body } = await Web3Token.verify(token);
     res.json({
