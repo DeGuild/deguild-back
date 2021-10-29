@@ -19,9 +19,38 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 admin.initializeApp();
 const express = require("express");
-//  const cookieParser = require('cookie-parser')();
 const cors = require("cors")({ origin: true });
-const shop = express();
+const guild = express();
+const Web3Token = require("web3-token");
+
+const validateWeb3Token = async (req, res, next) => {
+  if (!req.headers.authorization) {
+    functions.logger.error(
+      "No web token was passed in the Authorization header."
+    );
+    res.status(403).send("Unauthorized");
+    return;
+  }
+
+  const token = req.headers.authorization;
+
+  try {
+    const { address, body } = await Web3Token.verify(token);
+    if (
+      address === "0xAe488A5e940868bFFA6D59d9CDDb92Da11bb2cD9" ||
+      address === "0x785867278139c1cA73bF1e978461c8028061aDf6" ||
+      req.originalUrl === "/test" ||
+      req.originalUrl === "/profile"
+    ) {
+      next();
+      return;
+    }
+  } catch (error) {
+    functions.logger.error("Error while verifying Firebase ID token:", error);
+  }
+  res.status(403).send("Unauthorized");
+  return;
+};
 
 // Create and Deploy Your First Cloud Functions
 // https://firebase.google.com/docs/functions/write-firebase-functions
@@ -58,27 +87,49 @@ async function deleteCollection(db, collectionPath, batchSize) {
   });
 }
 
-const addMagicScroll = async (req, res) => {
+const addJob = async (req, res) => {
   // Grab the text parameter.
-  const address = req.body.address;
-  const tokenId = req.body.tokenId;
-  const courseId = req.body.courseId;
+  const tokenId = parseInt(req.body.tokenId, 10);
+  const level = req.body.level;
   const description = req.body.description;
+  const title = req.body.title;
+  const name = req.body.name;
+  const skills = req.body.skills ? req.body.skills : [];
+  const address = req.body.address;
+  // Push the new message into Firestore using the Firebase Admin SDK.
+
+  await admin
+    .firestore()
+    .collection(`DeGuild/${address}/tokens`)
+    .doc(tokenId)
+    .set({
+      title,
+      level,
+      tokenId,
+      description,
+      name,
+      skills,
+    });
+
+  // Send back a message that we've successfully written the message
+  res.json({
+    result: "Successful",
+  });
+};
+
+const setProfile = async (req, res) => {
+  // Grab the text parameter.
+  const token = req.headers.authorization;
+  const { address, body } = await Web3Token.verify(token);
   const name = req.body.name;
   const url = req.body.url
     ? req.body.url
     : "https://firebasestorage.googleapis.com/v0/b/deguild-2021.appspot.com/o/0.png?alt=media&token=131e4102-2ca3-4bf0-9480-3038c45aa372";
 
-  const prerequisite = req.body.prerequisite
-    ? req.body.prerequisite
-    : "0x0000000000000000000000000000000000000000";
-  // Push the new message into Firestore using the Firebase Admin SDK.
-
-  await admin
-    .firestore()
-    .collection(`MagicShop/${address}/tokens`)
-    .doc(tokenId)
-    .set({ url, tokenId: parseInt(tokenId, 10), courseId, description, name, prerequisite });
+  await admin.firestore().collection(`User`).doc(address).set({
+    url,
+    name,
+  });
 
   // Send back a message that we've successfully written the message
   res.json({
@@ -86,58 +137,23 @@ const addMagicScroll = async (req, res) => {
   });
 };
 
-const readMagicScroll = async (req, res) => {
-  // Grab the text parameter.
-  const address = req.params.address;
-  const tokenId = req.params.id;
-  const readResult = await admin
-    .firestore()
-    .collection(`MagicShop/${address}/tokens`)
-    .doc(tokenId)
-    .get();
-  // Send back a message that we've successfully written the message
-  functions.logger.log(readResult);
-  if (readResult.data()) {
-    try {
-      res.json(readResult.data());
-    } catch (error) {
-      res.json(error);
-    }
-  } else {
-    res.json({
-      message: "Magic scroll not found!",
-    });
-  }
-};
-
-const deleteMagicScroll = async (req, res) => {
-  // Grab the text parameter.
-  const address = req.params.address;
-  const tokenId = req.params.tokenId;
-  // Push the new message into Firestore using the Firebase Admin SDK.
-  await admin
-    .firestore()
-    .collection(`MagicShop/${address}/tokens`)
-    .doc(tokenId)
-    .delete();
-
-  // Send back a message that we've successfully written the message
+const testAPI = async (req, res) => {
+  const token = req.headers.authorization;
+  const { address, body } = await Web3Token.verify(token);
+  functions.logger.info(token);
+  functions.logger.info(address);
   res.json({
-    result: "Successful",
+    result: address,
   });
+  // Send back a message that we've successfully written the message
 };
 
-const deleteMagicShop = async (req, res) => {
+const deleteJob = async (req, res) => {
   // Grab the text parameter.
-  const address = req.params.address;
-  // Push the new message into Firestore using the Firebase Admin SDK.
-  // await admin.firestore().collection(`MagicShop/${address}/tokens`);
-  await deleteCollection(
-    admin.firestore(),
-    `MagicShop/${address}/tokens`,
-    9999
-  );
-  await admin.firestore().collection(`MagicShop`).doc(address).delete();
+  const address = req.body.address;
+  const id = req.body.jobId;
+
+  await admin.firestore().collection(`DeGuild`).doc(id).delete();
   // Send back a message that we've successfully written the message
   res.json({
     result: "Successful",
@@ -145,59 +161,12 @@ const deleteMagicShop = async (req, res) => {
   });
 };
 
-const allMagicScrolls = async (req, res) => {
-  // Grab the text parameter.
-  const address = req.params.address;
-  const tokenId = parseInt(req.params.tokenId, 10);
-  const direction = req.params.direction;
+guild.use(cors);
+guild.use(validateWeb3Token);
 
-  let data = [];
-  if (direction === "next") {
-    const startAtSnapshot = admin
-      .firestore()
-      .collection(`MagicShop/${address}/tokens`)
-      .orderBy("tokenId", "asc")
-      .startAfter(tokenId);
+guild.post("/addJob", addJob);
+guild.post("/deleteJob", deleteJob);
+guild.post("/profile", setProfile);
+guild.get("/test", testAPI);
 
-    const items = await startAtSnapshot.limit(24).get();
-    items.forEach((doc) => {
-      data.push(doc.data());
-    });
-  } else if (direction === "previous") {
-    const startAtSnapshot = admin
-      .firestore()
-      .collection(`MagicShop/${address}/tokens`)
-      .orderBy("tokenId", "desc")
-      .startAfter(tokenId);
-
-    const items = await startAtSnapshot.limit(24).get();
-    items.forEach((doc) => {
-      data.push(doc.data());
-    });
-  } else {
-    const readResult = await admin
-      .firestore()
-      .collection(`MagicShop/${address}/tokens`)
-      .orderBy("tokenId", "asc")
-      .limit(24)
-      .get();
-    // Send back a message that we've successfully written the message3
-    readResult.forEach((doc) => {
-      data.push(doc.data());
-    });
-    // readResult.map
-    functions.logger.log(readResult);
-  }
-
-  res.json(data.sort());
-};
-
-shop.use(cors);
-shop.post("/addMagicScroll", addMagicScroll);
-shop.get("/readMagicScroll/:address/:id", readMagicScroll);
-shop.post("/deleteMagicShop/:address", deleteMagicShop);
-shop.post("/deleteMagicScroll/:address/:tokenId", deleteMagicScroll);
-shop.get("/allMagicScrolls/:address/:direction/:tokenId", allMagicScrolls);
-shop.get("/allMagicScrolls/:address", allMagicScrolls);
-
-exports.shop = functions.https.onRequest(shop);
+exports.guild = functions.https.onRequest(guild);

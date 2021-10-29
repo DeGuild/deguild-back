@@ -18,7 +18,9 @@
     "eslint-plugin-promise": "^5.1.0",
     "express": "^4.17.1",
     "firebase-admin": "^9.2.0",
-    "firebase-functions": "^3.11.0"
+    "firebase-functions": "^3.11.0",
+    "web3": "^1.6.0",
+    "web3-token": "^0.1.32"
   },
   "devDependencies": {
     "babel-eslint": "^10.1.0",
