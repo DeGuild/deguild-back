@@ -24,7 +24,7 @@ const guild = express();
 const Web3Token = require("web3-token");
 
 const validateWeb3Token = async (req, res, next) => {
-  if (!req.headers['Authorization']) {
+  if (!req.headers.authorization) {
     functions.logger.error(
       "No web token was passed in the Authorization header."
     );
@@ -32,7 +32,7 @@ const validateWeb3Token = async (req, res, next) => {
     return;
   }
 
-  const token = req.headers['Authorization']
+  const token = req.headers.authorization
   functions.logger.info(req.originalUrl);
   functions.logger.info(token);
   functions.logger.info(req.headers.authorization);
