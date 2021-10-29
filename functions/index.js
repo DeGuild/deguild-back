@@ -89,17 +89,13 @@ async function deleteCollection(db, collectionPath, batchSize) {
 
 const addJob = async (req, res) => {
   // Grab the text parameter.
-  const tokenId = req.body.tokenId;
-  const courseId = req.body.courseId;
+  const tokenId = parseInt(req.body.tokenId, 10);
+  const level = req.body.level;
   const description = req.body.description;
+  const title = req.body.title;
   const name = req.body.name;
-  const url = req.body.url
-    ? req.body.url
-    : "https://firebasestorage.googleapis.com/v0/b/deguild-2021.appspot.com/o/0.png?alt=media&token=131e4102-2ca3-4bf0-9480-3038c45aa372";
-
-  const prerequisite = req.body.prerequisite
-    ? req.body.prerequisite
-    : "0x0000000000000000000000000000000000000000";
+  const skills = req.body.skills ? req.body.skills : [];
+  const address = req.body.address;
   // Push the new message into Firestore using the Firebase Admin SDK.
 
   await admin
@@ -107,12 +103,12 @@ const addJob = async (req, res) => {
     .collection(`DeGuild/${address}/tokens`)
     .doc(tokenId)
     .set({
-      url,
-      tokenId: parseInt(tokenId, 10),
-      courseId,
+      title,
+      level,
+      tokenId,
       description,
       name,
-      prerequisite,
+      skills,
     });
 
   // Send back a message that we've successfully written the message
@@ -123,17 +119,14 @@ const addJob = async (req, res) => {
 
 const setProfile = async (req, res) => {
   // Grab the text parameter.
+  const token = req.headers.authorization;
+  const { address, body } = await Web3Token.verify(token);
   const name = req.body.name;
   const url = req.body.url
     ? req.body.url
     : "https://firebasestorage.googleapis.com/v0/b/deguild-2021.appspot.com/o/0.png?alt=media&token=131e4102-2ca3-4bf0-9480-3038c45aa372";
 
-  const prerequisite = req.body.prerequisite
-    ? req.body.prerequisite
-    : "0x0000000000000000000000000000000000000000";
-  // Push the new message into Firestore using the Firebase Admin SDK.
-
-  await admin.firestore().collection(`DeGuild/${address}`).doc(tokenId).set({
+  await admin.firestore().collection(`User`).doc(address).set({
     url,
     name,
   });
