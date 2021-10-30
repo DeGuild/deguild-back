@@ -124,7 +124,7 @@ const setProfile = async (req, res) => {
   const name = req.body.name;
   const url = req.body.url
     ? req.body.url
-    : "https://firebasestorage.googleapis.com/v0/b/deguild-2021.appspot.com/o/0.png?alt=media&token=131e4102-2ca3-4bf0-9480-3038c45aa372";
+    : "https://firebasestorage.googleapis.com/v0/b/deguild-2021.appspot.com/o/0.png?alt=media";
 
   await admin.firestore().collection(`User`).doc(address).set({
     url,
