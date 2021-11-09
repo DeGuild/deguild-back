@@ -105,7 +105,7 @@ const addJob = async (req, res) => {
     .set({
       title,
       level,
-      tokenId,
+      tokenId: parseInt(tokenId, 10),
       description,
       name,
       skills,
