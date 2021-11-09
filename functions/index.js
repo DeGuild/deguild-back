@@ -15,6 +15,9 @@
  */
 "use strict";
 
+require("dotenv").config();
+const { API_URL, PRIVATE_KEY } = process.env;
+
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 admin.initializeApp();
@@ -22,6 +25,7 @@ const express = require("express");
 const cors = require("cors")({ origin: true });
 const guild = express();
 const Web3Token = require("web3-token");
+const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
 
 const validateWeb3Token = async (req, res, next) => {
   if (!req.headers.authorization) {
@@ -87,15 +91,28 @@ async function deleteCollection(db, collectionPath, batchSize) {
   });
 }
 
+const updateSubmission = async (req, res) => {
+  const web3 = createAlchemyWeb3(API_URL);
+  const token = req.headers.authorization;
+  const { address, body } = await Web3Token.verify(token);
+  functions.logger.info(token);
+  functions.logger.info(address);
+  res.json({
+    result: address,
+  });
+};
+
 const addJob = async (req, res) => {
   // Grab the text parameter.
-  const tokenId = parseInt(req.body.tokenId, 10);
+  const tokenId = req.body.tokenId;
   const level = req.body.level;
   const description = req.body.description;
   const title = req.body.title;
   const name = req.body.name;
   const skills = req.body.skills ? req.body.skills : [];
   const address = req.body.address;
+  const submission = "";
+  const note = "";
   // Push the new message into Firestore using the Firebase Admin SDK.
 
   await admin
@@ -109,6 +126,8 @@ const addJob = async (req, res) => {
       description,
       name,
       skills,
+      submission,
+      note,
     });
 
   // Send back a message that we've successfully written the message
