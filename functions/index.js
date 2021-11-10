@@ -15,15 +15,14 @@
  */
 "use strict";
 
-require("dotenv").config();
-const { API_URL, PRIVATE_KEY } = process.env;
-const {
-  abi,
-} = require("../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/DeGuild/V2/IDeGuild+.sol/IDeGuildPlus.json");
-
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 admin.initializeApp();
+
+const {
+  abi,
+} = require("./IDeGuildPlus.json");
+
 const express = require("express");
 const cors = require("cors")({ origin: true });
 const guild = express();
@@ -43,11 +42,14 @@ const validateWeb3Token = async (req, res, next) => {
 
   try {
     const { address, body } = await Web3Token.verify(token);
+    functions.logger.info(address);
+    functions.logger.info(address === "0xAe488A5e940868bFFA6D59d9CDDb92Da11bb2cD9");
+
     if (
       address === "0xAe488A5e940868bFFA6D59d9CDDb92Da11bb2cD9" ||
       address === "0x785867278139c1cA73bF1e978461c8028061aDf6" ||
       req.originalUrl === "/test" ||
-      req.originalUrl === "/profile"
+      req.originalUrl === "/profile" || req.originalUrl === "/name"
     ) {
       next();
       return;
@@ -95,17 +97,20 @@ async function deleteCollection(db, collectionPath, batchSize) {
 }
 
 const updateSubmission = async (req, res) => {
-  const web3 = createAlchemyWeb3(API_URL);
+  const web3 = createAlchemyWeb3(functions.config().web3.api);
   const token = req.headers.authorization;
   const { address, body } = await Web3Token.verify(token);
   functions.logger.info(token);
   functions.logger.info(address);
-  const deguild = new web3.eth.Contract(abi, address);
+  const deguild = new web3.eth.Contract(
+    abi,
+    "0x1906e3cA463E5De6B3F7C65d294696bD59cbfA31"
+  );
   const caller = await deguild.methods.name().call();
   res.json({
     result: address,
     name: caller,
-    message: 'updating',
+    message: "updating",
   });
 };
 
