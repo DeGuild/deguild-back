@@ -19,9 +19,7 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 admin.initializeApp();
 
-const {
-  abi,
-} = require("./IDeGuildPlus.json");
+const { abi } = require("./IDeGuildPlus.json");
 
 const express = require("express");
 const cors = require("cors")({ origin: true });
@@ -30,6 +28,8 @@ const Web3Token = require("web3-token");
 const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
 
 const validateWeb3Token = async (req, res, next) => {
+  const web3 = createAlchemyWeb3(functions.config().web3.api);
+
   if (!req.headers.authorization) {
     functions.logger.error(
       "No web token was passed in the Authorization header."
@@ -42,14 +42,15 @@ const validateWeb3Token = async (req, res, next) => {
 
   try {
     const { address, body } = await Web3Token.verify(token);
-    functions.logger.info(address);
-    functions.logger.info(address === "0xAe488A5e940868bFFA6D59d9CDDb92Da11bb2cD9");
 
     if (
-      address === "0xAe488A5e940868bFFA6D59d9CDDb92Da11bb2cD9" ||
-      address === "0x785867278139c1cA73bF1e978461c8028061aDf6" ||
+      web3.utils.toChecksumAddress(address) ===
+        "0xAe488A5e940868bFFA6D59d9CDDb92Da11bb2cD9" ||
+      web3.utils.toChecksumAddress(address) ===
+        "0x785867278139c1cA73bF1e978461c8028061aDf6" ||
       req.originalUrl === "/test" ||
-      req.originalUrl === "/profile" || req.originalUrl === "/name"
+      req.originalUrl === "/profile" ||
+      req.originalUrl === "/submit"
     ) {
       next();
       return;
@@ -100,18 +101,39 @@ const updateSubmission = async (req, res) => {
   const web3 = createAlchemyWeb3(functions.config().web3.api);
   const token = req.headers.authorization;
   const { address, body } = await Web3Token.verify(token);
-  functions.logger.info(token);
-  functions.logger.info(address);
+
+  const tokenId = req.body.tokenId;
+  const addressContract = req.body.address;
+  const submission = req.body.submission;
+  const note = req.body.note;
+
+  // Send back a message that we've successfully written the message
   const deguild = new web3.eth.Contract(
     abi,
-    "0x1906e3cA463E5De6B3F7C65d294696bD59cbfA31"
+    addressContract
   );
-  const caller = await deguild.methods.name().call();
-  res.json({
-    result: address,
-    name: caller,
-    message: "updating",
-  });
+  const caller = await deguild.methods.ownersOf(tokenId).call();
+  functions.logger.info(caller);
+  functions.logger.info(address);
+  if (caller[1] === web3.utils.toChecksumAddress(address)) {
+    await admin
+      .firestore()
+      .collection(`DeGuild/${addressContract}/tokens`)
+      .doc(tokenId)
+      .set({
+        submission,
+        note,
+      });
+    res.json({
+      result: address,
+      name: caller,
+      message: "Updated",
+    });
+  } else {
+    res.status(403).json({
+      message: "Unauthorize",
+    });
+  }
 };
 
 const addJob = async (req, res) => {
@@ -175,6 +197,7 @@ const testAPI = async (req, res) => {
   functions.logger.info(address);
   res.json({
     result: address,
+    key: token,
   });
   // Send back a message that we've successfully written the message
 };
@@ -198,7 +221,7 @@ guild.use(validateWeb3Token);
 guild.post("/addJob", addJob);
 guild.post("/deleteJob", deleteJob);
 guild.post("/profile", setProfile);
+guild.put("/submit", updateSubmission);
 guild.get("/test", testAPI);
-guild.get("/name", updateSubmission);
 
 exports.guild = functions.https.onRequest(guild);
