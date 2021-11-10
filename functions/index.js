@@ -145,7 +145,6 @@ const addJob = async (req, res) => {
   const description = req.body.description;
   const title = req.body.title;
   const name = req.body.name;
-  const skills = req.body.skills ? req.body.skills : [];
   const address = req.body.address;
   const submission = "";
   const note = "";
@@ -161,7 +160,6 @@ const addJob = async (req, res) => {
       tokenId: parseInt(tokenId, 10),
       description,
       name,
-      skills,
       submission,
       note,
     });
