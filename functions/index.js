@@ -17,6 +17,9 @@
 
 require("dotenv").config();
 const { API_URL, PRIVATE_KEY } = process.env;
+const {
+  abi,
+} = require("../../DeGuild-MG-CS-Token-contracts/artifacts/contracts/DeGuild/V2/IDeGuild+.sol/IDeGuildPlus.json");
 
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
@@ -97,8 +100,12 @@ const updateSubmission = async (req, res) => {
   const { address, body } = await Web3Token.verify(token);
   functions.logger.info(token);
   functions.logger.info(address);
+  const deguild = new web3.eth.Contract(abi, address);
+  const caller = await deguild.methods.name().call();
   res.json({
     result: address,
+    name: caller,
+    message: 'updating',
   });
 };
 
@@ -187,5 +194,6 @@ guild.post("/addJob", addJob);
 guild.post("/deleteJob", deleteJob);
 guild.post("/profile", setProfile);
 guild.get("/test", testAPI);
+guild.get("/name", updateSubmission);
 
 exports.guild = functions.https.onRequest(guild);
