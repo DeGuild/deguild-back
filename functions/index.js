@@ -108,30 +108,32 @@ const updateSubmission = async (req, res) => {
   const note = req.body.note;
 
   // Send back a message that we've successfully written the message
-  const deguild = new web3.eth.Contract(
-    abi,
-    addressContract
-  );
-  const caller = await deguild.methods.ownersOf(tokenId).call();
-  functions.logger.info(caller);
-  functions.logger.info(address);
-  if (caller[1] === web3.utils.toChecksumAddress(address)) {
-    await admin
-      .firestore()
-      .collection(`DeGuild/${addressContract}/tokens`)
-      .doc(tokenId)
-      .set({
-        submission,
-        note,
+  const deguild = new web3.eth.Contract(abi, addressContract);
+  try {
+    const caller = await deguild.methods.ownersOf(tokenId).call();
+    if (caller[1] === web3.utils.toChecksumAddress(address)) {
+      await admin
+        .firestore()
+        .collection(`DeGuild/${addressContract}/tokens`)
+        .doc(tokenId)
+        .set({
+          submission,
+          note,
+        });
+      res.json({
+        result: address,
+        name: caller,
+        message: "Updated",
       });
-    res.json({
-      result: address,
-      name: caller,
-      message: "Updated",
-    });
-  } else {
-    res.status(403).json({
-      message: "Unauthorize",
+    } else {
+      res.status(403).json({
+        message: "Unauthorize",
+      });
+    }
+  } catch (error) {
+    functions.logger.error("Error while verifying with web3", error);
+    res.status(500).json({
+      message: "ERROR",
     });
   }
 };
