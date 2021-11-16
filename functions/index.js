@@ -145,6 +145,7 @@ const addJob = async (req, res) => {
   const description = req.body.description;
   const title = req.body.title;
   const name = req.body.name;
+  const time = req.body.time;
   const address = req.body.address;
   const submission = "";
   const note = "";
@@ -162,6 +163,7 @@ const addJob = async (req, res) => {
       name,
       submission,
       note,
+      time,
     });
 
   // Send back a message that we've successfully written the message
