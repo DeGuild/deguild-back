@@ -140,7 +140,7 @@ const updateSubmission = async (req, res) => {
 
 const addJob = async (req, res) => {
   // Grab the text parameter.
-  const tokenId = parseInt(req.body.tokenId, 10);
+  const tokenId = req.body.tokenId;
   const level = req.body.level;
   const description = req.body.description;
   const title = req.body.title;
@@ -157,7 +157,7 @@ const addJob = async (req, res) => {
     .set({
       title,
       level,
-      tokenId,
+      tokenId: parseInt(tokenId, 10),
       description,
       name,
       submission,
