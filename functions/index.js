@@ -214,6 +214,8 @@ const getSubmission = async (req, res) => {
       const caller = await deguild.methods.ownersOf(tokenId).call();
 
       if (caller[0] === web3.utils.toChecksumAddress(address)) {
+        functions.logger.info("NICE! Good to go!");
+
         const urlOptions = {
           version: 'v4',
           action: "read",
