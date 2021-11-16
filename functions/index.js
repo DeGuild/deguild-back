@@ -194,7 +194,7 @@ const setProfile = async (req, res) => {
 };
 
 const getSubmission = async (req, res) => {
-  const bucket = admin.storage().bucket();
+  const bucket = admin.storage().bucket('deguild-2021.appspot.com');
 
   const web3 = createAlchemyWeb3(functions.config().web3.api);
   const token = req.headers.authorization;
@@ -235,6 +235,8 @@ const getSubmission = async (req, res) => {
         });
       }
     } catch (error) {
+      functions.logger.error(sign);
+
       res.json(error);
     }
   } else {
