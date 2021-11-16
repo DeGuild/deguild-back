@@ -52,7 +52,7 @@ const validateWeb3Token = async (req, res, next) => {
       req.originalUrl === "/test" ||
       req.originalUrl === "/profile" ||
       req.originalUrl === "/submit"||
-      req.originalUrl === "/submission"
+      req.originalUrl.startsWith("/submission")
     ) {
       next();
       return;
