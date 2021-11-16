@@ -215,6 +215,7 @@ const getSubmission = async (req, res) => {
 
       if (caller[0] === web3.utils.toChecksumAddress(address)) {
         const urlOptions = {
+          version: 'v4',
           action: "read",
           expires: Date.now() + 1000 * 60 * 2, // 2 minutes
         };
