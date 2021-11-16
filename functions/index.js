@@ -26,6 +26,7 @@ const cors = require("cors")({ origin: true });
 const guild = express();
 const Web3Token = require("web3-token");
 const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
+const bucket = admin.storage().bucket();
 
 const validateWeb3Token = async (req, res, next) => {
   const web3 = createAlchemyWeb3(functions.config().web3.api);
@@ -116,7 +117,7 @@ const updateSubmission = async (req, res) => {
         .firestore()
         .collection(`DeGuild/${addressContract}/tokens`)
         .doc(tokenId)
-        .set({
+        .update({
           submission,
           note,
         });
@@ -192,6 +193,48 @@ const setProfile = async (req, res) => {
   });
 };
 
+const getSubmission = async (req, res) => {
+  const web3 = createAlchemyWeb3(functions.config().web3.api);
+  const token = req.headers.authorization;
+  const addressDeGuild = req.params.address;
+  const tokenId = req.params.jobId;
+  const readResult = await admin
+    .firestore()
+    .collection(`DeGuild/${addressDeGuild}/tokens`)
+    .doc(tokenId)
+    .get();
+  if (readResult.data()) {
+    functions.logger.info(readResult.data().submission);
+
+    try {
+      const { address, body } = await Web3Token.verify(token);
+      const deguild = new web3.eth.Contract(abi, addressDeGuild);
+      const caller = await deguild.methods.ownersOf(tokenId).call();
+
+      if (caller[0] === web3.utils.toChecksumAddress(address)) {
+        const urlOptions = {
+          action: "read",
+          expires: Date.now() + 1000 * 60 * 2, // 2 minutes
+        };
+
+        const [url] = await bucket
+          .file(readResult.data().submission)
+          .getSignedUrl(urlOptions);
+        res.json({
+          result: url,
+        });
+      }
+    } catch (error) {
+      res.json(error);
+    }
+  } else {
+    res.status(404).json({
+      message: "Job not found!",
+    });
+  }
+  // Send back a message that we've successfully written the message
+};
+
 const testAPI = async (req, res) => {
   const token = req.headers.authorization;
   const { address, body } = await Web3Token.verify(token);
@@ -225,5 +268,6 @@ guild.post("/deleteJob", deleteJob);
 guild.post("/profile", setProfile);
 guild.put("/submit", updateSubmission);
 guild.get("/test", testAPI);
+guild.get("/submission/:address/:jobId", getSubmission);
 
 exports.guild = functions.https.onRequest(guild);
