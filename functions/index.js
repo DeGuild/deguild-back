@@ -112,7 +112,7 @@ const updateSubmission = async (req, res) => {
   const deguild = new web3.eth.Contract(abi, addressContract);
   try {
     const caller = await deguild.methods.ownersOf(tokenId).call();
-    if (caller[1] === web3.utils.toChecksumAddress(address)) {
+    if (caller[1] === web3.utils.toChecksumAddress(address) || caller[0] === web3.utils.toChecksumAddress(address)) {
       await admin
         .firestore()
         .collection(`DeGuild/${addressContract}/tokens`)
