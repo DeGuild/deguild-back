@@ -51,7 +51,8 @@ const validateWeb3Token = async (req, res, next) => {
         "0x785867278139c1cA73bF1e978461c8028061aDf6" ||
       req.originalUrl === "/test" ||
       req.originalUrl === "/profile" ||
-      req.originalUrl === "/submit"
+      req.originalUrl === "/submit"||
+      req.originalUrl === "/submission"
     ) {
       next();
       return;
