@@ -26,7 +26,6 @@ const cors = require("cors")({ origin: true });
 const guild = express();
 const Web3Token = require("web3-token");
 const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
-const bucket = admin.storage().bucket();
 
 const validateWeb3Token = async (req, res, next) => {
   const web3 = createAlchemyWeb3(functions.config().web3.api);
@@ -195,6 +194,8 @@ const setProfile = async (req, res) => {
 };
 
 const getSubmission = async (req, res) => {
+  const bucket = admin.storage().bucket();
+
   const web3 = createAlchemyWeb3(functions.config().web3.api);
   const token = req.headers.authorization;
   const addressDeGuild = req.params.address;
