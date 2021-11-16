@@ -140,7 +140,7 @@ const updateSubmission = async (req, res) => {
 
 const addJob = async (req, res) => {
   // Grab the text parameter.
-  const tokenId = parseInt(req.params.tokenId, 10);
+  const tokenId = parseInt(req.body.tokenId, 10);
   const level = req.body.level;
   const description = req.body.description;
   const title = req.body.title;
