@@ -206,8 +206,6 @@ const getSubmission = async (req, res) => {
     .doc(tokenId)
     .get();
   if (readResult.data()) {
-    functions.logger.info(readResult.data().submission);
-
     try {
       const { address, body } = await Web3Token.verify(token);
       const deguild = new web3.eth.Contract(abi, addressDeGuild);
@@ -215,6 +213,12 @@ const getSubmission = async (req, res) => {
 
       if (caller[0] === web3.utils.toChecksumAddress(address)) {
         functions.logger.info("NICE! Good to go!");
+        functions.logger.info(readResult.data().submission);
+
+        const file = await bucket
+        .file(readResult.data().submission);
+
+        functions.logger.info(file);
 
         const urlOptions = {
           version: 'v4',
@@ -222,14 +226,12 @@ const getSubmission = async (req, res) => {
           expires: Date.now() + 1000 * 60 * 2, // 2 minutes
         };
 
-        const [url] = await bucket
-          .file(readResult.data().submission)
-          .getSignedUrl(urlOptions);
+        const sign = await file.getSignedUrl(urlOptions);
 
-        functions.logger.info(url);
+        functions.logger.info(sign);
 
         res.json({
-          result: url,
+          result: sign,
         });
       }
     } catch (error) {
