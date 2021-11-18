@@ -44,14 +44,7 @@ const validateWeb3Token = async (req, res, next) => {
     const { address, body } = await Web3Token.verify(token);
 
     if (
-      web3.utils.toChecksumAddress(address) ===
-        "0xAe488A5e940868bFFA6D59d9CDDb92Da11bb2cD9" ||
-      web3.utils.toChecksumAddress(address) ===
-        "0x785867278139c1cA73bF1e978461c8028061aDf6" ||
-      req.originalUrl === "/test" ||
-      req.originalUrl === "/profile" ||
-      req.originalUrl === "/submit" ||
-      req.originalUrl.startsWith("/submission")
+      address
     ) {
       next();
       return;
@@ -279,7 +272,7 @@ guild.post("/addJob", addJob);
 guild.post("/deleteJob", deleteJob);
 guild.post("/profile", setProfile);
 guild.put("/submit", updateSubmission);
-guild.get("/test", testAPI);
+// guild.get("/test", testAPI);
 guild.get("/submission/:address/:jobId", getSubmission);
 
 exports.guild = functions.https.onRequest(guild);
