@@ -206,17 +206,22 @@ const setProfile = async (req, res) => {
       const verifiers = await Promise.all(
         arr.map(async (token) => {
           try {
-            const cm = new web3.eth.Contract(cmABI, token.address);
-            const caller = await cm.methods.verify(address, token.tokenId).call();
+            const cm = new web3.eth.Contract(
+              cmABI,
+              web3.utils.toChecksumAddress(token.address)
+            );
+            const caller = await cm.methods
+              .verify(address, token.tokenId)
+              .call();
             return caller;
           } catch (err) {
-            return 'TOKEN NOT FOUND?';
+            return false;
           }
         })
       );
 
-      // const passed = verifiers;
-      return verifiers;
+      const passed = verifiers.filter((ele) => ele);
+      return passed;
     })
   );
 
