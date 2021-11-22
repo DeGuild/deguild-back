@@ -179,7 +179,7 @@ const setProfile = async (req, res) => {
   const addressDeGuild = req.body.address;
 
   const readResult = await admin.firestore().collection(`Certificate`).get();
-  const deguild = new web3.eth.Contract(deGuildABI,  addressDeGuild);
+  const deguild = new web3.eth.Contract(deGuildABI, addressDeGuild);
 
   // Send back a message that we've successfully written the message3
 
@@ -220,28 +220,27 @@ const setProfile = async (req, res) => {
       );
 
       const passed = verifiers.filter((ele) => ele);
-      return passed;
+      return passed.length;
     })
   );
 
   functions.logger.log(verfiersResult);
-  // functions.logger.log(verfiersResult.reduce((a, b) => a + b, 0));
+  functions.logger.log(verfiersResult.reduce((a, b) => a + b, 0));
   // functions.logger.log(verificationCount);
   const completedJobs = await deguild.getPastEvents("JobCompleted", {
     filter: { taker: address },
     fromBlock: 0,
     toBlock: "latest",
   });
-  // const level =
-  //   verfiersResult.reduce((a, b) => a + b, 0) + completedJobs.length;
-  const level = 999;
+  const level =
+    verfiersResult.reduce((a, b) => a + b, 0) + completedJobs.length / 2.0;
   await admin.firestore().collection(`User`).doc(address).set({
     url,
     name,
     level,
   });
 
-  res.json({ verification: verfiersResult, jobs: completedJobs });
+  res.json({ url, name, level });
 };
 
 const getSubmission = async (req, res) => {
