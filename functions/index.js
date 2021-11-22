@@ -19,7 +19,8 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 admin.initializeApp();
 
-const { abi } = require("./IDeGuildPlus.json");
+const deGuildABI = require("./contracts/IDeGuildPlus.json").abi;
+const cmABI = require("./contracts/ISkillCertificatePlus.json").abi;
 
 const express = require("express");
 const cors = require("cors")({ origin: true });
@@ -43,9 +44,7 @@ const validateWeb3Token = async (req, res, next) => {
   try {
     const { address, body } = await Web3Token.verify(token);
 
-    if (
-      address
-    ) {
+    if (address) {
       next();
       return;
     }
@@ -102,10 +101,13 @@ const updateSubmission = async (req, res) => {
   const note = req.body.note;
 
   // Send back a message that we've successfully written the message
-  const deguild = new web3.eth.Contract(abi, addressContract);
+  const deguild = new web3.eth.Contract(deGuildABI, addressContract);
   try {
     const caller = await deguild.methods.ownersOf(tokenId).call();
-    if (caller[1] === web3.utils.toChecksumAddress(address) || caller[0] === web3.utils.toChecksumAddress(address)) {
+    if (
+      caller[1] === web3.utils.toChecksumAddress(address) ||
+      caller[0] === web3.utils.toChecksumAddress(address)
+    ) {
       await admin
         .firestore()
         .collection(`DeGuild/${addressContract}/tokens`)
@@ -168,26 +170,77 @@ const addJob = async (req, res) => {
 
 const setProfile = async (req, res) => {
   // Grab the text parameter.
+  const web3 = createAlchemyWeb3(functions.config().web3.api);
   const token = req.headers.authorization;
   const { address, body } = await Web3Token.verify(token);
   const name = req.body.name;
-  const url = req.body.url
-    ? req.body.url
-    : "https://firebasestorage.googleapis.com/v0/b/deguild-2021.appspot.com/o/0.png?alt=media";
+  const url = req.body.url;
+  // Grab the text parameter.
+  const addressDeGuild = req.params.address;
+
+  const readResult = await admin.firestore().collection(`Certificate`).get();
+  const deguild = new web3.eth.Contract(deGuildABI, addressDeGuild);
+
+  // Send back a message that we've successfully written the message3
+
+  //All skills are fetched here
+  const allSkills = await Promise.all(
+    readResult.docs.map(async (doc) => {
+      let data = [];
+      const snapshot = await admin
+        .firestore()
+        .collection(`Certificate/${doc.id}/tokens`)
+        .orderBy("tokenId", "asc")
+        .get();
+      snapshot.forEach((doc) => {
+        data.push(doc.data());
+      });
+      return data.sort();
+    })
+  );
+
+  //Use verify to check verification
+  const verfiersResult = await Promise.all(
+    allSkills.map(async (arr) => {
+      const verifiers = await Promise.all(
+        arr.map(async (token) => {
+          try {
+            const cm = new web3.eth.Contract(cmABI, token.address);
+            const caller = await cm.methods.verify(address, token.tokenId);
+            return caller;
+          } catch (err) {
+            return false;
+          }
+        })
+      );
+
+      const passed = verifiers.filter((ele) => ele);
+      return passed.length;
+    })
+  );
+
+  functions.logger.log(verfiersResult);
+  functions.logger.log(verfiersResult.reduce((a, b) => a + b, 0));
+  // functions.logger.log(verificationCount);
+  const completedJobs = await deguild.getPastEvents("JobCompleted", {
+    filter: { taker: address },
+    fromBlock: 0,
+    toBlock: "latest",
+  });
+  const level =
+    verfiersResult.reduce((a, b) => a + b, 0) + completedJobs.length;
 
   await admin.firestore().collection(`User`).doc(address).set({
     url,
     name,
+    level,
   });
 
-  // Send back a message that we've successfully written the message
-  res.json({
-    result: "Successful",
-  });
+  res.json({ verification: verfiersResult, jobs: completedJobs });
 };
 
 const getSubmission = async (req, res) => {
-  const bucket = admin.storage().bucket('deguild-2021.appspot.com');
+  const bucket = admin.storage().bucket("deguild-2021.appspot.com");
 
   const web3 = createAlchemyWeb3(functions.config().web3.api);
   const token = req.headers.authorization;
@@ -201,20 +254,19 @@ const getSubmission = async (req, res) => {
   if (readResult.data()) {
     try {
       const { address, body } = await Web3Token.verify(token);
-      const deguild = new web3.eth.Contract(abi, addressDeGuild);
+      const deguild = new web3.eth.Contract(deGuildABI, addressDeGuild);
       const caller = await deguild.methods.ownersOf(tokenId).call();
 
       if (caller[0] === web3.utils.toChecksumAddress(address)) {
         functions.logger.info("NICE! Good to go!");
         functions.logger.info(readResult.data().submission);
 
-        const file = await bucket
-        .file(readResult.data().submission);
+        const file = await bucket.file(readResult.data().submission);
 
         functions.logger.info(file);
 
         const urlOptions = {
-          version: 'v4',
+          version: "v4",
           action: "read",
           expires: Date.now() + 1000 * 60 * 2, // 2 minutes
         };
