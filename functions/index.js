@@ -176,7 +176,7 @@ const setProfile = async (req, res) => {
   const name = req.body.name;
   const url = req.body.url;
   // Grab the text parameter.
-  const addressDeGuild = req.params.address;
+  const addressDeGuild = req.body.address;
 
   const readResult = await admin.firestore().collection(`Certificate`).get();
   const deguild = new web3.eth.Contract(deGuildABI, addressDeGuild);
@@ -209,27 +209,27 @@ const setProfile = async (req, res) => {
             const caller = await cm.methods.verify(address, token.tokenId);
             return caller;
           } catch (err) {
-            return false;
+            return 'TOKEN NOT FOUND?';
           }
         })
       );
 
-      const passed = verifiers.filter((ele) => ele);
-      return passed.length;
+      // const passed = verifiers;
+      return verifiers;
     })
   );
 
   functions.logger.log(verfiersResult);
-  functions.logger.log(verfiersResult.reduce((a, b) => a + b, 0));
+  // functions.logger.log(verfiersResult.reduce((a, b) => a + b, 0));
   // functions.logger.log(verificationCount);
   const completedJobs = await deguild.getPastEvents("JobCompleted", {
     filter: { taker: address },
     fromBlock: 0,
     toBlock: "latest",
   });
-  const level =
-    verfiersResult.reduce((a, b) => a + b, 0) + completedJobs.length;
-
+  // const level =
+  //   verfiersResult.reduce((a, b) => a + b, 0) + completedJobs.length;
+  const level = 999;
   await admin.firestore().collection(`User`).doc(address).set({
     url,
     name,
@@ -322,7 +322,8 @@ guild.use(validateWeb3Token);
 
 guild.post("/addJob", addJob);
 guild.post("/deleteJob", deleteJob);
-guild.post("/profile", setProfile);
+guild.post("/register", setProfile);
+guild.put("/profile", setProfile);
 guild.put("/submit", updateSubmission);
 // guild.get("/test", testAPI);
 guild.get("/submission/:address/:jobId", getSubmission);
