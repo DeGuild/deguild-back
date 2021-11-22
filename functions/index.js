@@ -179,9 +179,7 @@ const setProfile = async (req, res) => {
   const addressDeGuild = req.body.address;
 
   const readResult = await admin.firestore().collection(`Certificate`).get();
-  const deguild = new web3.eth.Contract(deGuildABI,  web3.utils.toChecksumAddress(addressDeGuild));
-  functions.logger.log(addressDeGuild);
-  functions.logger.log(web3.utils.toChecksumAddress(addressDeGuild));
+  const deguild = new web3.eth.Contract(deGuildABI,  addressDeGuild);
 
   // Send back a message that we've successfully written the message3
 
