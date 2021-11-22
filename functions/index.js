@@ -173,6 +173,7 @@ const setProfile = async (req, res) => {
   const web3 = createAlchemyWeb3(functions.config().web3.api);
   const token = req.headers.authorization;
   const { address, body } = await Web3Token.verify(token);
+  const userAddress = web3.utils.toChecksumAddress(address);
   const name = req.body.name;
   const url = req.body.url;
   // Grab the text parameter.
@@ -210,7 +211,7 @@ const setProfile = async (req, res) => {
               web3.utils.toChecksumAddress(token.address)
             );
             const caller = await cm.methods
-              .verify(address, token.tokenId)
+              .verify(userAddress, token.tokenId)
               .call();
             return caller;
           } catch (err) {
@@ -228,13 +229,13 @@ const setProfile = async (req, res) => {
   functions.logger.log(verfiersResult.reduce((a, b) => a + b, 0));
   // functions.logger.log(verificationCount);
   const completedJobs = await deguild.getPastEvents("JobCompleted", {
-    filter: { taker: address },
+    filter: { taker: userAddress },
     fromBlock: 0,
     toBlock: "latest",
   });
   const level =
     verfiersResult.reduce((a, b) => a + b, 0) + completedJobs.length / 2.0;
-  await admin.firestore().collection(`User`).doc(address).set({
+  await admin.firestore().collection(`User`).doc(userAddress).set({
     url,
     name,
     level,
