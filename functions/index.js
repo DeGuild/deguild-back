@@ -180,6 +180,7 @@ const setProfile = async (req, res) => {
 
   const readResult = await admin.firestore().collection(`Certificate`).get();
   const deguild = new web3.eth.Contract(deGuildABI, addressDeGuild);
+  functions.logger.log(addressDeGuild);
 
   // Send back a message that we've successfully written the message3
 
@@ -206,7 +207,7 @@ const setProfile = async (req, res) => {
         arr.map(async (token) => {
           try {
             const cm = new web3.eth.Contract(cmABI, token.address);
-            const caller = await cm.methods.verify(address, token.tokenId);
+            const caller = await cm.methods.verify(address, token.tokenId).call();
             return caller;
           } catch (err) {
             return 'TOKEN NOT FOUND?';
