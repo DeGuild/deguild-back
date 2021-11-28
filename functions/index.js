@@ -21,6 +21,7 @@ admin.initializeApp();
 
 const deGuildABI = require("./contracts/IDeGuildPlus.json").abi;
 const cmABI = require("./contracts/ISkillCertificatePlus.json").abi;
+const ownableABI = require("./contracts/Ownable.json").abi;
 
 const express = require("express");
 const cors = require("cors")({ origin: true });
@@ -262,7 +263,10 @@ const getSubmission = async (req, res) => {
       const deguild = new web3.eth.Contract(deGuildABI, addressDeGuild);
       const caller = await deguild.methods.ownersOf(tokenId).call();
 
-      if (caller[0] === web3.utils.toChecksumAddress(address)) {
+      const userAddress = web3.utils.toChecksumAddress(address);
+
+      // `zipfile/${userAddress.value.user}/${this.job.title}-submission`
+      if (caller[0] === userAddress) {
         functions.logger.info("NICE! Good to go!");
         functions.logger.info(readResult.data().submission);
 
@@ -286,6 +290,60 @@ const getSubmission = async (req, res) => {
       }
     } catch (error) {
       functions.logger.error(sign);
+
+      res.json(error);
+    }
+  } else {
+    res.status(404).json({
+      message: "Job not found!",
+    });
+  }
+  // Send back a message that we've successfully written the message
+};
+
+const adminInvestigate = async (req, res) => {
+  const bucket = admin.storage().bucket("deguild-2021.appspot.com");
+  const addressDeGuild = req.params.address;
+
+  const web3 = createAlchemyWeb3(functions.config().web3.api);
+  const token = req.headers.authorization;
+  const addressTaker = req.body.addressTaker;
+  const title = req.body.title;
+  if (readResult.data()) {
+    try {
+      const { address, body } = await Web3Token.verify(token);
+
+      const userAddress = web3.utils.toChecksumAddress(address);
+
+      const ownable = new web3.eth.Contract(ownableABI, addressDeGuild);
+      const ownerOfShop = await ownable.methods.owner().call();
+      // `zipfile/${userAddress.value.user}/${this.job.title}-submission`
+      if (ownerOfShop === userAddress) {
+        functions.logger.info("NICE! Good to go!");
+
+        const file = await bucket.file(`zipfile/${addressTaker}/${title}-submission`);
+
+        functions.logger.info(file);
+
+        const urlOptions = {
+          version: "v4",
+          action: "read",
+          expires: Date.now() + 1000 * 60 * 2, // 2 minutes
+        };
+
+        const sign = await file.getSignedUrl(urlOptions);
+
+        functions.logger.info(sign);
+
+        res.json({
+          result: sign,
+        });
+      }else{
+        res.status(403).json({
+          message: "You are not the guildmaster!",
+        });
+      }
+    } catch (error) {
 
       res.json(error);
     }
@@ -332,5 +390,6 @@ guild.put("/profile", setProfile);
 guild.put("/submit", updateSubmission);
 // guild.get("/test", testAPI);
 guild.get("/submission/:address/:jobId", getSubmission);
+guild.get("/submission/:address", adminInvestigate);
 
 exports.guild = functions.https.onRequest(guild);
