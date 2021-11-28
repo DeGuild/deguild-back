@@ -7,7 +7,7 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
+          "indexed": true,
           "internalType": "address",
           "name": "student",
           "type": "address"
@@ -16,6 +16,12 @@
           "indexed": false,
           "internalType": "uint256",
           "name": "scrollId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "typeId",
           "type": "uint256"
         }
       ],
@@ -26,7 +32,7 @@
       "anonymous": false,
       "inputs": [
         {
-          "indexed": false,
+          "indexed": true,
           "internalType": "address",
           "name": "student",
           "type": "address"
@@ -35,6 +41,12 @@
           "indexed": false,
           "internalType": "uint256",
           "name": "scrollId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "typeId",
           "type": "uint256"
         }
       ],
@@ -50,6 +62,35 @@
         }
       ],
       "name": "addCertificate",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address[]",
+          "name": "to",
+          "type": "address[]"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "scrollOwnedID",
+          "type": "uint256[]"
+        },
+        {
+          "internalType": "uint256",
+          "name": "typeId",
+          "type": "uint256"
+        }
+      ],
+      "name": "batchMint",
       "outputs": [
         {
           "internalType": "bool",
