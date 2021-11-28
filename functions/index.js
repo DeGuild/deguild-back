@@ -19,8 +19,8 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 admin.initializeApp();
 
-const deGuildABI = require("./contracts/IDeGuildPlus.json").abi;
-const cmABI = require("./contracts/ISkillCertificatePlus.json").abi;
+const deGuildABI = require("./contracts/DeGuild/V2/IDeGuild+.sol/IDeGuildPlus.json").abi;
+const cmABI = require("./contracts/SkillCertificates/V2/ISkillCertificate+.sol/ISkillCertificatePlus.json").abi;
 const ownableABI = require("./contracts/Ownable.json").abi;
 
 const express = require("express");
