@@ -1,7 +1,7 @@
 # deguild-back
 Firebase Functions + Alchemy web3 + Web3-token
 
-APIs in this repository can be accessed with Authorization tokens and some APIs are restricted to the magic shop owner only
+APIs in this repository can be accessed with Authorization tokens and some APIs are restricted to the deGuild owner only
 
 ## List of APIs
 
