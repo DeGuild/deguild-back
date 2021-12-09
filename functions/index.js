@@ -31,8 +31,10 @@ const guild = express();
 const Web3Token = require("web3-token");
 const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
 
+/**
+ * @dev function to check the token attached from the request, rejecting any request with no Web3 token attached
+ */
 const validateWeb3Token = async (req, res, next) => {
-  const web3 = createAlchemyWeb3(functions.config().web3.api);
 
   if (!req.headers.authorization) {
     functions.logger.error(
@@ -58,41 +60,10 @@ const validateWeb3Token = async (req, res, next) => {
   return;
 };
 
-// Create and Deploy Your First Cloud Functions
-// https://firebase.google.com/docs/functions/write-firebase-functions
-async function deleteQueryBatch(db, query, resolve) {
-  const snapshot = await query.get();
 
-  const batchSize = snapshot.size;
-  if (batchSize === 0) {
-    // When there are no documents left, we are done
-    resolve();
-    return;
-  }
-
-  // Delete documents in a batch
-  const batch = db.batch();
-  snapshot.docs.forEach((doc) => {
-    batch.delete(doc.ref);
-  });
-  await batch.commit();
-
-  // Recurse on the next process tick, to avoid
-  // exploding the stack.
-  process.nextTick(() => {
-    deleteQueryBatch(db, query, resolve);
-  });
-}
-
-async function deleteCollection(db, collectionPath, batchSize) {
-  const collectionRef = db.collection(collectionPath);
-  const query = collectionRef.orderBy("__name__").limit(batchSize);
-
-  return new Promise((resolve, reject) => {
-    deleteQueryBatch(db, query, resolve).catch(reject);
-  });
-}
-
+/**
+ * @dev function to update submission file, but can only proceed if the sender is the client or taker
+ */
 const updateSubmission = async (req, res) => {
   const web3 = createAlchemyWeb3(functions.config().web3.api);
   const token = req.headers.authorization;
@@ -137,6 +108,9 @@ const updateSubmission = async (req, res) => {
   }
 };
 
+/**
+ * @dev function to add a job
+ */
 const addJob = async (req, res) => {
   // Grab the text parameter.
   const tokenId = req.body.tokenId;
@@ -171,6 +145,9 @@ const addJob = async (req, res) => {
   });
 };
 
+/**
+ * @dev function to set up a user profile
+ */
 const setProfile = async (req, res) => {
   // Grab the text parameter.
   const web3 = createAlchemyWeb3(functions.config().web3.api);
@@ -230,7 +207,6 @@ const setProfile = async (req, res) => {
 
   functions.logger.log(verfiersResult);
   functions.logger.log(verfiersResult.reduce((a, b) => a + b, 0));
-  // functions.logger.log(verificationCount);
   const completedJobs = await deguild.getPastEvents("JobCompleted", {
     filter: { taker: userAddress },
     fromBlock: 0,
@@ -247,6 +223,9 @@ const setProfile = async (req, res) => {
   res.json({ url, name, level });
 };
 
+/**
+ * @dev function to get submission file, but can only proceed if the sender is the client or taker
+ */
 const getSubmission = async (req, res) => {
   const bucket = admin.storage().bucket("deguild-2021.appspot.com");
 
@@ -303,6 +282,9 @@ const getSubmission = async (req, res) => {
   // Send back a message that we've successfully written the message
 };
 
+/**
+ * @dev function to get submission file, but can only proceed if the sender is the owner of deGuild
+ */
 const adminInvestigate = async (req, res) => {
   const bucket = admin.storage().bucket("deguild-2021.appspot.com");
   const addressDeGuild = req.params.address;
@@ -318,7 +300,6 @@ const adminInvestigate = async (req, res) => {
 
     const ownable = new web3.eth.Contract(ownableABI, addressDeGuild);
     const ownerOfShop = await ownable.methods.owner().call();
-    // `zipfile/${userAddress.value.user}/${this.job.title}-submission`
     if (ownerOfShop === userAddress) {
       functions.logger.info("NICE! Good to go!");
 
@@ -351,19 +332,6 @@ const adminInvestigate = async (req, res) => {
 
       functions.logger.info(file);
 
-      // const urlOptions = {
-      //   version: "v4",
-      //   action: "read",
-      //   expires: Date.now() + 1000 * 60 * 2, // 2 minutes
-      // };
-
-      // const sign = await file.getSignedUrl(urlOptions);
-
-      // functions.logger.info(sign);
-
-      // res.json({
-      //   result: sign,
-      // });
     } else {
       res.status(403).json({
         message: "You are not the guildmaster!",
@@ -375,24 +343,16 @@ const adminInvestigate = async (req, res) => {
   // Send back a message that we've successfully written the message
 };
 
-const testAPI = async (req, res) => {
-  const token = req.headers.authorization;
-  const { address, body } = await Web3Token.verify(token);
-  functions.logger.info(token);
-  functions.logger.info(address);
-  res.json({
-    result: address,
-    key: token,
-  });
-  // Send back a message that we've successfully written the message
-};
 
+/**
+ * @dev function to delete a job from database
+ */
 const deleteJob = async (req, res) => {
   // Grab the text parameter.
   const address = req.body.address;
   const id = req.body.jobId;
 
-  await admin.firestore().collection(`DeGuild`).doc(id).delete();
+  await admin.firestore().collection(`DeGuild/${address}/tokens`).doc(id).delete();
   // Send back a message that we've successfully written the message
   res.json({
     result: "Successful",
@@ -408,7 +368,6 @@ guild.post("/deleteJob", deleteJob);
 guild.post("/register", setProfile);
 guild.put("/profile", setProfile);
 guild.put("/submit", updateSubmission);
-// guild.get("/test", testAPI);
 guild.get("/submission/:address/:jobId", getSubmission);
 guild.post("/submission/:address", adminInvestigate);
 
